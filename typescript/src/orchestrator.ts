@@ -421,22 +421,44 @@ export class MultiAgentOrchestrator {
     additionalParams: Record<any, any> = {}
   ): Promise<AgentResponse> {
     this.executionTimes = new Map();
-  
+
     try {
-      const classifierResult = await this.classifyRequest(userInput, userId, sessionId);
-  
+      const classifierResult = await this.classifyRequest(
+        userInput,
+        userId,
+        sessionId
+      );
+
       if (!classifierResult.selectedAgent) {
         return {
-          metadata: this.createMetadata(classifierResult, userInput, userId, sessionId, additionalParams),
+          metadata: this.createMetadata(
+            classifierResult,
+            userInput,
+            userId,
+            sessionId,
+            additionalParams
+          ),
           output: this.config.NO_SELECTED_AGENT_MESSAGE!,
           streaming: false,
         };
       }
-  
-      return await this.agentProcessRequest(userInput, userId, sessionId, classifierResult, additionalParams);
+
+      return await this.agentProcessRequest(
+        userInput,
+        userId,
+        sessionId,
+        classifierResult,
+        additionalParams
+      );
     } catch (error) {
       return {
-        metadata: this.createMetadata(null, userInput, userId, sessionId, additionalParams),
+        metadata: this.createMetadata(
+          null,
+          userInput,
+          userId,
+          sessionId,
+          additionalParams
+        ),
         output: this.config.GENERAL_ROUTING_ERROR_MSG_MESSAGE || String(error),
         streaming: false,
       };
