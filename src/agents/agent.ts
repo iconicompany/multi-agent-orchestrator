@@ -71,9 +71,11 @@ export abstract class Agent {
   /** Whether to save the chat or not. */
   saveChat: boolean;
 
+  blocked?: any;
+
   // Optional logger instance
   // If provided, the agent will use this logger for logging instead of the default console
-  logger: any | Console = console
+  logger: any | Console = console;
 
   // Flag to enable/disable agent debug trace logging
   // If true, the agent will log additional debug information
@@ -87,11 +89,20 @@ export abstract class Agent {
     this.name = options.name;
     this.id = this.generateKeyFromName(options.name);
     this.description = options.description;
-    this.saveChat = options.saveChat ?? true;  // Default to true if not provided
+    this.saveChat = options.saveChat ?? true; // Default to true if not provided
 
     this.LOG_AGENT_DEBUG_TRACE = options.LOG_AGENT_DEBUG_TRACE ?? false;
-    this.logger = options.logger ?? (this.LOG_AGENT_DEBUG_TRACE ? console : { info: () => {}, warn: () => {}, error: () => {}, debug: () => {}, log: () => {} });
-
+    this.logger =
+      options.logger ??
+      (this.LOG_AGENT_DEBUG_TRACE
+        ? console
+        : {
+            info: () => {},
+            warn: () => {},
+            error: () => {},
+            debug: () => {},
+            log: () => {},
+          });
   }
 
   /**
@@ -130,21 +141,20 @@ export abstract class Agent {
     }
   }
 
-/**
- * Abstract method to process a request.
- * This method must be implemented by all concrete agent classes.
- * 
- * @param inputText - The user input as a string.
- * @param chatHistory - An array of Message objects representing the conversation history.
- * @param additionalParams - Optional additional parameters as key-value pairs.
- * @returns A Promise that resolves to a Message object containing the agent's response.
- */
-abstract processRequest(
-  inputText: string,
-  userId: string,
-  sessionId: string,
-  chatHistory: ConversationMessage[],
-  additionalParams?: Record<string, string>
-): Promise<ConversationMessage | AsyncIterable<any>>;
-
+  /**
+   * Abstract method to process a request.
+   * This method must be implemented by all concrete agent classes.
+   *
+   * @param inputText - The user input as a string.
+   * @param chatHistory - An array of Message objects representing the conversation history.
+   * @param additionalParams - Optional additional parameters as key-value pairs.
+   * @returns A Promise that resolves to a Message object containing the agent's response.
+   */
+  abstract processRequest(
+    inputText: string,
+    userId: string,
+    sessionId: string,
+    chatHistory: ConversationMessage[],
+    additionalParams?: Record<string, string>
+  ): Promise<ConversationMessage | AsyncIterable<any>>;
 }

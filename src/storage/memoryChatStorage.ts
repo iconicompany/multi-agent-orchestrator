@@ -10,6 +10,8 @@ export class InMemoryChatStorage extends ChatStorage {
     this.conversations = new Map();
   }
 
+  async fetchContext() {}
+
   async saveChatMessage(
     userId: string,
     sessionId: string,
@@ -21,13 +23,21 @@ export class InMemoryChatStorage extends ChatStorage {
     let conversation = this.conversations.get(key) || [];
 
     if (super.isConsecutiveMessage(conversation, newMessage)) {
-      Logger.logger.log(`> Consecutive ${newMessage.role} message detected for agent ${agentId}. Not saving.`);
+      Logger.logger.log(
+        `> Consecutive ${newMessage.role} message detected for agent ${agentId}. Not saving.`
+      );
       return this.removeTimestamps(conversation);
     }
 
-    const timestampedMessage: TimestampedMessage = { ...newMessage, timestamp: Date.now() };
+    const timestampedMessage: TimestampedMessage = {
+      ...newMessage,
+      timestamp: Date.now(),
+    };
     conversation = [...conversation, timestampedMessage];
-    conversation = super.trimConversation(conversation, maxHistorySize) as TimestampedMessage[];
+    conversation = super.trimConversation(
+      conversation,
+      maxHistorySize
+    ) as TimestampedMessage[];
 
     this.conversations.set(key, conversation);
     return this.removeTimestamps(conversation);
@@ -42,7 +52,10 @@ export class InMemoryChatStorage extends ChatStorage {
     const key = this.generateKey(userId, sessionId, agentId);
     let conversation = this.conversations.get(key) || [];
     if (maxHistorySize !== undefined) {
-      conversation = super.trimConversation(conversation, maxHistorySize) as TimestampedMessage[];
+      conversation = super.trimConversation(
+        conversation,
+        maxHistorySize
+      ) as TimestampedMessage[];
     }
     return this.removeTimestamps(conversation);
   }
@@ -53,15 +66,18 @@ export class InMemoryChatStorage extends ChatStorage {
   ): Promise<ConversationMessage[]> {
     const allMessages: TimestampedMessage[] = [];
     for (const [key, messages] of this.conversations.entries()) {
-      const [storedUserId, storedSessionId, agentId] = key.split('#');
+      const [storedUserId, storedSessionId, agentId] = key.split("#");
       if (storedUserId === userId && storedSessionId === sessionId) {
         // Add messages with their associated agentId
-        allMessages.push(...messages.map(message => ({
-          ...message,
-          content: message.role === ParticipantRole.ASSISTANT 
-            ? [{ text: `[${agentId}] ${message.content?.[0]?.text || ''}` }]
-            : message.content
-        })));
+        allMessages.push(
+          ...messages.map(message => ({
+            ...message,
+            content:
+              message.role === ParticipantRole.ASSISTANT
+                ? [{ text: `[${agentId}] ${message.content?.[0]?.text || ""}` }]
+                : message.content,
+          }))
+        );
       }
     }
     // Sort messages by timestamp
@@ -69,11 +85,17 @@ export class InMemoryChatStorage extends ChatStorage {
     return this.removeTimestamps(allMessages);
   }
 
-  private generateKey(userId: string, sessionId: string, agentId: string): string {
+  private generateKey(
+    userId: string,
+    sessionId: string,
+    agentId: string
+  ): string {
     return `${userId}#${sessionId}#${agentId}`;
   }
 
-  private removeTimestamps(messages: TimestampedMessage[]): ConversationMessage[] {
+  private removeTimestamps(
+    messages: TimestampedMessage[]
+  ): ConversationMessage[] {
     return messages.map(({ timestamp: _timestamp, ...message }) => message);
   }
 }
