@@ -1,3 +1,0 @@
-multi-agent-orchestrator
-streamlit
-duckduckgo-search

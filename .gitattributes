@@ -1,5 +1,0 @@
-# Include TypeScript and Python as detectable languages
-*.py linguist-detectable=true
-*.ts linguist-detectable=true
-
-*.js linguist-detectable=false

@@ -1,6 +1,6 @@
 import { AgentOverlapAnalyzer } from "./agentOverlapAnalyzer";
 import { Agent, AgentResponse } from "./agents/agent";
-import { ClassifierResult } from './classifiers/classifier';
+import { ClassifierResult } from "./classifiers/classifier";
 import { ChatStorage } from "./storage/chatStorage";
 import { InMemoryChatStorage } from "./storage/memoryChatStorage";
 import { AccumulatorTransform } from "./utils/helpers";
@@ -113,7 +113,8 @@ export const DEFAULT_CONFIG: OrchestratorConfig = {
   CLASSIFICATION_ERROR_MESSAGE: undefined,
 
   /** Default message when no agent is selected to handle the request */
-  NO_SELECTED_AGENT_MESSAGE: "I'm sorry, I couldn't determine how to handle your request. Could you please rephrase it?",
+  NO_SELECTED_AGENT_MESSAGE:
+    "I'm sorry, I couldn't determine how to handle your request. Could you please rephrase it?",
 
   /** Default general error message for routing errors */
   GENERAL_ROUTING_ERROR_MSG_MESSAGE: undefined,
@@ -176,9 +177,8 @@ export interface RequestMetadata {
 
   // Optional: Indicates if classification failed during processing
   // Only present if an error occurred during classification
-  errorType?: 'classification_failed';
+  errorType?: "classification_failed";
 }
-
 
 export class MultiAgentOrchestrator {
   private config: OrchestratorConfig;
@@ -214,11 +214,13 @@ export class MultiAgentOrchestrator {
       USE_DEFAULT_AGENT_IF_NONE_IDENTIFIED:
         options.config?.USE_DEFAULT_AGENT_IF_NONE_IDENTIFIED ??
         DEFAULT_CONFIG.USE_DEFAULT_AGENT_IF_NONE_IDENTIFIED,
-      CLASSIFICATION_ERROR_MESSAGE: options.config?.CLASSIFICATION_ERROR_MESSAGE,
+      CLASSIFICATION_ERROR_MESSAGE:
+        options.config?.CLASSIFICATION_ERROR_MESSAGE,
       NO_SELECTED_AGENT_MESSAGE:
         options.config?.NO_SELECTED_AGENT_MESSAGE ??
         DEFAULT_CONFIG.NO_SELECTED_AGENT_MESSAGE,
-      GENERAL_ROUTING_ERROR_MSG_MESSAGE: options.config?.GENERAL_ROUTING_ERROR_MSG_MESSAGE
+      GENERAL_ROUTING_ERROR_MSG_MESSAGE:
+        options.config?.GENERAL_ROUTING_ERROR_MSG_MESSAGE,
     };
 
     this.executionTimes = new Map();
@@ -229,7 +231,6 @@ export class MultiAgentOrchestrator {
     this.classifier = options.classifier || new BedrockClassifier();
 
     this.defaultAgent = options.defaultAgent;
-
   }
 
   analyzeAgentOverlap(): void {
@@ -239,6 +240,8 @@ export class MultiAgentOrchestrator {
   }
 
   addAgent(agent: Agent): void {
+    console.log("add Agent2222222");
+
     if (this.agents[agent.id]) {
       throw new Error(`An agent with ID '${agent.id}' already exists.`);
     }
@@ -335,27 +338,32 @@ export class MultiAgentOrchestrator {
     sessionId: string
   ): Promise<ClassifierResult> {
     try {
-      const chatHistory = await this.storage.fetchAllChats(userId, sessionId) || [];
+      const chatHistory =
+        (await this.storage.fetchAllChats(userId, sessionId)) || [];
       const classifierResult = await this.measureExecutionTime(
         "Classifying user intent",
         () => this.classifier.classify(userInput, chatHistory)
       );
-  
+
       this.logger.printIntent(userInput, classifierResult);
-  
-      if (!classifierResult.selectedAgent && this.config.USE_DEFAULT_AGENT_IF_NONE_IDENTIFIED && this.defaultAgent) {
+
+      if (
+        !classifierResult.selectedAgent &&
+        this.config.USE_DEFAULT_AGENT_IF_NONE_IDENTIFIED &&
+        this.defaultAgent
+      ) {
         const fallbackResult = this.getFallbackResult();
         this.logger.info("Using default agent as no agent was selected");
         return fallbackResult;
       }
-  
+
       return classifierResult;
     } catch (error) {
       this.logger.error("Error during intent classification:", error);
       throw error;
     }
   }
-  
+
   async agentProcessRequest(
     userInput: string,
     userId: string,
@@ -371,9 +379,15 @@ export class MultiAgentOrchestrator {
         classifierResult,
         additionalParams,
       });
-  
-      const metadata = this.createMetadata(classifierResult, userInput, userId, sessionId, additionalParams);
-  
+
+      const metadata = this.createMetadata(
+        classifierResult,
+        userInput,
+        userId,
+        sessionId,
+        additionalParams
+      );
+
       if (this.isAsyncIterable(agentResponse)) {
         const accumulatorTransform = new AccumulatorTransform();
         this.processStreamInBackground(
@@ -390,7 +404,7 @@ export class MultiAgentOrchestrator {
           streaming: true,
         };
       }
-  
+
       if (classifierResult?.selectedAgent.saveChat) {
         await saveConversationExchange(
           userInput,
@@ -402,7 +416,7 @@ export class MultiAgentOrchestrator {
           this.config.MAX_MESSAGE_PAIRS_PER_AGENT
         );
       }
-  
+
       return {
         metadata,
         output: agentResponse,
@@ -413,7 +427,7 @@ export class MultiAgentOrchestrator {
       throw error;
     }
   }
-  
+
   async routeRequest(
     userInput: string,
     userId: string,
@@ -466,7 +480,6 @@ export class MultiAgentOrchestrator {
       this.logger.printExecutionTimes(this.executionTimes);
     }
   }
-  
 
   private async processStreamInBackground(
     agentResponse: AsyncIterable<any>,
@@ -496,20 +509,16 @@ export class MultiAgentOrchestrator {
 
       const fullResponse = accumulatorTransform.getAccumulatedData();
       if (fullResponse) {
-
-
-
-      if (agent.saveChat) {
-        await saveConversationExchange(
-          userInput,
-          fullResponse,
-          this.storage,
-          userId,
-          sessionId,
-          agent.id
-        );
-      }
-
+        if (agent.saveChat) {
+          await saveConversationExchange(
+            userInput,
+            fullResponse,
+            this.storage,
+            userId,
+            sessionId,
+            agent.id
+          );
+        }
       } else {
         this.logger.warn("No data accumulated, messages not saved");
       }
@@ -538,13 +547,13 @@ export class MultiAgentOrchestrator {
     this.executionTimes.set(timerName, startTime);
 
     return Promise.resolve(fn()).then(
-      (result) => {
+      result => {
         const endTime = Date.now();
         const duration = endTime - startTime;
         this.executionTimes.set(timerName, duration);
         return result;
       },
-      (error) => {
+      error => {
         const endTime = Date.now();
         const duration = endTime - startTime;
         this.executionTimes.set(timerName, duration);
