@@ -16,10 +16,12 @@ export class SqlChatStorage extends ChatStorage {
     this.initialized = this.initializeDatabase();
   }
 
+  async fetchContext() {}
+
   private async initializeDatabase() {
     try {
       // Create conversations table if it doesn't exist
-      await this.client.execute(/*sql*/`
+      await this.client.execute(/*sql*/ `
         CREATE TABLE IF NOT EXISTS conversations (
           user_id TEXT NOT NULL,
           session_id TEXT NOT NULL,
@@ -33,7 +35,7 @@ export class SqlChatStorage extends ChatStorage {
       `);
 
       // Create index for faster queries
-      await this.client.execute(/*sql*/`
+      await this.client.execute(/*sql*/ `
         CREATE INDEX IF NOT EXISTS idx_conversations_lookup
         ON conversations(user_id, session_id, agent_id);
       `);
@@ -52,23 +54,29 @@ export class SqlChatStorage extends ChatStorage {
   ): Promise<ConversationMessage[]> {
     try {
       // Fetch existing conversation
-      const existingConversation = await this.fetchChat(userId, sessionId, agentId);
+      const existingConversation = await this.fetchChat(
+        userId,
+        sessionId,
+        agentId
+      );
 
       if (super.isConsecutiveMessage(existingConversation, newMessage)) {
-        Logger.logger.log(`> Consecutive ${newMessage.role} message detected for agent ${agentId}. Not saving.`);
+        Logger.logger.log(
+          `> Consecutive ${newMessage.role} message detected for agent ${agentId}. Not saving.`
+        );
         return existingConversation;
       }
 
       // Begin transaction
-      await this.client.transaction().then(async (tx) => {
+      await this.client.transaction().then(async tx => {
         // Get the next message index
         const nextIndexResult = await tx.execute({
-          sql: /*sql*/`
+          sql: /*sql*/ `
             SELECT COALESCE(MAX(message_index) + 1, 0) as next_index
             FROM conversations
             WHERE user_id = ? AND session_id = ? AND agent_id = ?
           `,
-          args: [userId, sessionId, agentId]
+          args: [userId, sessionId, agentId],
         });
 
         const nextIndex = nextIndexResult.rows[0].next_index as number;
@@ -79,7 +87,7 @@ export class SqlChatStorage extends ChatStorage {
 
         // Insert new message
         await tx.execute({
-          sql: /*sql*/`
+          sql: /*sql*/ `
             INSERT INTO conversations (
               user_id, session_id, agent_id, message_index,
               role, content, timestamp
@@ -92,14 +100,14 @@ export class SqlChatStorage extends ChatStorage {
             nextIndex,
             newMessage.role,
             content,
-            timestamp
-          ]
+            timestamp,
+          ],
         });
 
         // If maxHistorySize is set, cleanup old messages
         if (maxHistorySize !== undefined) {
           await tx.execute({
-            sql: /*sql*/`
+            sql: /*sql*/ `
               DELETE FROM conversations
               WHERE user_id = ?
                 AND session_id = ?
@@ -113,10 +121,14 @@ export class SqlChatStorage extends ChatStorage {
                 )
             `,
             args: [
-              userId, sessionId, agentId,
+              userId,
+              sessionId,
+              agentId,
               maxHistorySize,
-              userId, sessionId, agentId
-            ]
+              userId,
+              sessionId,
+              agentId,
+            ],
           });
         }
       });
@@ -136,11 +148,11 @@ export class SqlChatStorage extends ChatStorage {
     maxHistorySize?: number
   ): Promise<ConversationMessage[]> {
     try {
-      const sql = /*sql*/`
+      const sql = /*sql*/ `
         SELECT role, content, timestamp
         FROM conversations
         WHERE user_id = ? AND session_id = ? AND agent_id = ?
-        ORDER BY message_index ${maxHistorySize ? 'DESC LIMIT ?' : 'ASC'}
+        ORDER BY message_index ${maxHistorySize ? "DESC LIMIT ?" : "ASC"}
       `;
 
       const args = maxHistorySize
@@ -169,22 +181,27 @@ export class SqlChatStorage extends ChatStorage {
   ): Promise<ConversationMessage[]> {
     try {
       const result = await this.client.execute({
-        sql: /*sql*/`
+        sql: /*sql*/ `
           SELECT role, content, timestamp, agent_id
           FROM conversations
           WHERE user_id = ? AND session_id = ?
           ORDER BY timestamp ASC
         `,
-        args: [userId, sessionId]
+        args: [userId, sessionId],
       });
 
       const messages = result.rows;
 
       return messages.map(msg => ({
         role: msg.role as ParticipantRole,
-        content: msg.role === ParticipantRole.ASSISTANT
-          ? [{ text: `[${msg.agent_id}] ${JSON.parse(msg.content as string)[0]?.text || ''}` }]
-          : JSON.parse(msg.content as string)
+        content:
+          msg.role === ParticipantRole.ASSISTANT
+            ? [
+                {
+                  text: `[${msg.agent_id}] ${JSON.parse(msg.content as string)[0]?.text || ""}`,
+                },
+              ]
+            : JSON.parse(msg.content as string),
       }));
     } catch (error) {
       Logger.logger.error("Error fetching all chats:", error);

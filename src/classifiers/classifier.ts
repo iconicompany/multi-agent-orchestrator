@@ -1,7 +1,4 @@
-import {
-  ConversationMessage,
-  TemplateVariables,
-} from "../types";
+import { ConversationMessage, TemplateVariables } from "../types";
 
 import { Agent } from "../agents/agent";
 
@@ -18,7 +15,6 @@ export interface ClassifierResult {
  * Abstract base class for all classifiers
  */
 export abstract class Classifier {
-
   protected modelId: string;
   protected agentDescriptions: string;
   protected agents: { [key: string]: Agent };
@@ -27,14 +23,11 @@ export abstract class Classifier {
   protected systemPrompt: string;
   protected customVariables: TemplateVariables;
 
-
-
   /**
    * Constructs a new Classifier instance.
    * @param options - Configuration options for the agent, inherited from AgentOptions.
    */
   constructor() {
-
     this.agentDescriptions = "";
     this.history = "";
     this.customVariables = {};
@@ -121,12 +114,29 @@ Skip any preamble and provide only the response in the specified format.
 `;
   }
 
+  setAgentDescriptions(context?: any) {
+    const agentDescriptions = Object.entries(this.agents)
+      .filter(([_key, agent]) => {
+        if (agent?.blocked?.context && context) {
+          for (const key in agent.blocked.context) {
+            if (context[key]) {
+              return false;
+            }
+          }
+        }
+
+        return true;
+      })
+      .map(([_key, agent]) => `${agent.id}:${agent.description}`);
+
+    // Добавить фильтр агентов в зависимости от контекста
+
+    this.agentDescriptions = agentDescriptions.join("\n\n");
+  }
+
   setAgents(agents: { [key: string]: Agent }) {
-    const agentDescriptions = Object.entries(agents)
-      .map(([_key, agent]) => `${agent.id}:${agent.description}`)
-      .join("\n\n");
-    this.agentDescriptions = agentDescriptions;
     this.agents = agents;
+    this.setAgentDescriptions();
   }
 
   setHistory(messages: ConversationMessage[]): void {
@@ -147,15 +157,14 @@ Skip any preamble and provide only the response in the specified format.
 
   private formatMessages(messages: ConversationMessage[]): string {
     return messages
-      .map((message) => {
-        const texts = message.content.map((content) => content.text).join(" ");
+      .map(message => {
+        const texts = message.content.map(content => content.text).join(" ");
         return `${message.role}: ${texts}`;
       })
       .join("\n");
   }
 
-
-    /**
+  /**
    * Classifies the input text based on the provided chat history.
    *
    * This method orchestrates the classification process by:
@@ -167,32 +176,35 @@ Skip any preamble and provide only the response in the specified format.
    * @param chatHistory - An array of ConversationMessage objects representing the chat history.
    * @returns A Promise that resolves to a ClassifierResult object containing the classification outcome.
    */
-    async classify(
-      inputText: string,
-      chatHistory: ConversationMessage[]
-    ): Promise<ClassifierResult> {
-      // Set the chat history
-      this.setHistory(chatHistory);
-      // Update the system prompt with the latest history, agent descriptions, and custom variables
-      this.updateSystemPrompt();
-      return await this.processRequest(inputText, chatHistory);
-    }
+  async classify(
+    inputText: string,
+    chatHistory: ConversationMessage[],
+    context?: any
+  ): Promise<ClassifierResult> {
+    // Set the chat history
+    this.setHistory(chatHistory);
+    // Update the system prompt with the latest history, agent descriptions, and custom variables
+    this.updateSystemPrompt(context);
+    return await this.processRequest(inputText, chatHistory);
+  }
 
-    /**
-     * Abstract method to process a request.
-     * This method must be implemented by all concrete agent classes.
-     *
-     * @param inputText - The user input as a string.
-     * @param chatHistory - An array of Message objects representing the conversation history.
-     * @returns A Promise that resolves to a ClassifierResult object containing the classification outcome.
-     */
-    abstract processRequest(
-      inputText: string,
-      chatHistory: ConversationMessage[]
-    ): Promise<ClassifierResult>;
+  /**
+   * Abstract method to process a request.
+   * This method must be implemented by all concrete agent classes.
+   *
+   * @param inputText - The user input as a string.
+   * @param chatHistory - An array of Message objects representing the conversation history.
+   * @returns A Promise that resolves to a ClassifierResult object containing the classification outcome.
+   */
+  abstract processRequest(
+    inputText: string,
+    chatHistory: ConversationMessage[]
+  ): Promise<ClassifierResult>;
 
+  private updateSystemPrompt(context?: any): void {
+    // изменять agentDescriptions в зависимости от context
+    this.setAgentDescriptions(context);
 
-  private updateSystemPrompt(): void {
     const allVariables: TemplateVariables = {
       ...this.customVariables,
       AGENT_DESCRIPTIONS: this.agentDescriptions,

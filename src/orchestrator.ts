@@ -340,9 +340,13 @@ export class MultiAgentOrchestrator {
     try {
       const chatHistory =
         (await this.storage.fetchAllChats(userId, sessionId)) || [];
+
+      // добавить функцию получения контекста из базы
+      const context = {};
+
       const classifierResult = await this.measureExecutionTime(
         "Classifying user intent",
-        () => this.classifier.classify(userInput, chatHistory)
+        () => this.classifier.classify(userInput, chatHistory, context)
       );
 
       this.logger.printIntent(userInput, classifierResult);
