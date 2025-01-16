@@ -17,6 +17,7 @@ export class SqlChatStorage extends ChatStorage {
   }
 
   async fetchContext() {}
+  async saveContext() {}
 
   private async initializeDatabase() {
     try {

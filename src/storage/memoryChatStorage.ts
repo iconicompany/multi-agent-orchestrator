@@ -11,6 +11,7 @@ export class InMemoryChatStorage extends ChatStorage {
   }
 
   async fetchContext() {}
+  async saveContext() {}
 
   async saveChatMessage(
     userId: string,

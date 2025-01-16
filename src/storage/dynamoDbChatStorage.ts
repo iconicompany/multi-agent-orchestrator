@@ -32,6 +32,7 @@ export class DynamoDbChatStorage extends ChatStorage {
   }
 
   async fetchContext() {}
+  async saveContext() {}
 
   async saveChatMessage(
     userId: string,

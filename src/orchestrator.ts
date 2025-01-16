@@ -286,11 +286,16 @@ export class MultiAgentOrchestrator {
         return "I'm sorry, but I need more information to understand your request. Could you please be more specific?";
       } else {
         const { selectedAgent } = classifierResult;
+
+        // TODO нужно оптимизировать под 1 запрос
+
         const agentChatHistory = await this.storage.fetchChat(
           userId,
           sessionId,
           selectedAgent.id
         );
+
+        const oldContext = await this.storage.fetchContext(userId, sessionId);
 
         this.logger.printChatHistory(agentChatHistory, selectedAgent.id);
 
@@ -324,6 +329,16 @@ export class MultiAgentOrchestrator {
           responseText = response.content[0].text;
         }
 
+        if (response.context) {
+          await this.storage.saveContext(
+            userId,
+            sessionId,
+            selectedAgent.id,
+            oldContext,
+            response.context
+          );
+        }
+
         return responseText;
       }
     } catch (error) {
@@ -338,11 +353,11 @@ export class MultiAgentOrchestrator {
     sessionId: string
   ): Promise<ClassifierResult> {
     try {
+      // TODO нужно оптимизировать под 1 запрос
       const chatHistory =
         (await this.storage.fetchAllChats(userId, sessionId)) || [];
 
-      // добавить функцию получения контекста из базы
-      const context = {};
+      const context = await this.storage.fetchContext(userId, sessionId);
 
       const classifierResult = await this.measureExecutionTime(
         "Classifying user intent",

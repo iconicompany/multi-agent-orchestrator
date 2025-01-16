@@ -119,7 +119,7 @@ export class OpenAIClassifier extends Classifier {
         temperature: this.inferenceConfig.temperature,
         top_p: this.inferenceConfig.topP,
         tools: this.tools,
-        tool_choice: { type: "function", function: { name: "analyzePrompt" } }
+        tool_choice: { type: "function", function: { name: "analyzePrompt" } },
       });
 
       const toolCall = response.choices[0]?.message?.tool_calls?.[0];
@@ -139,7 +139,6 @@ export class OpenAIClassifier extends Classifier {
         confidence: parseFloat(toolInput.confidence),
       };
       return intentClassifierResult;
-
     } catch (error) {
       Logger.logger.error("Error processing request:", error);
       throw error;

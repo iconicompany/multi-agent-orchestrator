@@ -31,7 +31,14 @@ export abstract class ChatStorage {
     maxHistorySize?: number
   ): Promise<ConversationMessage[]>;
 
-  abstract fetchContext(userId: string): Promise<any>;
+  abstract fetchContext(userId: string, sessionId: string): Promise<any>;
+  abstract saveContext(
+    userId: string,
+    sessionId: string,
+    selectedAgentId: string,
+    oldContext: any,
+    context: any
+  ): Promise<any>;
 
   abstract fetchChat(
     userId: string,
