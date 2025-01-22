@@ -272,7 +272,7 @@ export class MultiAgentOrchestrator {
 
   async dispatchToAgent(
     params: DispatchToAgentsParams
-  ): Promise<string | AsyncIterable<any>> {
+  ): Promise<any | AsyncIterable<any>> {
     const {
       userInput,
       userId,
@@ -339,6 +339,13 @@ export class MultiAgentOrchestrator {
           );
         }
 
+        if (response.isCommand) {
+          return {
+            isCommand: response.isCommand,
+            responseText,
+          };
+        }
+
         return responseText;
       }
     } catch (error) {
@@ -389,7 +396,7 @@ export class MultiAgentOrchestrator {
     sessionId: string,
     classifierResult: ClassifierResult,
     additionalParams: Record<any, any> = {}
-  ): Promise<AgentResponse> {
+  ): Promise<AgentResponse | any> {
     try {
       const agentResponse = await this.dispatchToAgent({
         userInput,
@@ -398,6 +405,9 @@ export class MultiAgentOrchestrator {
         classifierResult,
         additionalParams,
       });
+      if (agentResponse.isCommand) {
+        return agentResponse;
+      }
 
       const metadata = this.createMetadata(
         classifierResult,
@@ -452,7 +462,7 @@ export class MultiAgentOrchestrator {
     userId: string,
     sessionId: string,
     additionalParams: Record<any, any> = {}
-  ): Promise<AgentResponse> {
+  ): Promise<AgentResponse | any> {
     this.executionTimes = new Map();
 
     try {

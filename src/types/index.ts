@@ -32,7 +32,7 @@ export type StreamingResponse = {
  */
 export enum ParticipantRole {
   ASSISTANT = "assistant",
-  USER = "user"
+  USER = "user",
 }
 
 /**
@@ -42,6 +42,7 @@ export interface ConversationMessage {
   role: ParticipantRole;
   content: any[] | undefined;
   context?: any;
+  isCommand?: boolean;
 }
 
 /**

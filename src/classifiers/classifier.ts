@@ -34,12 +34,11 @@ export abstract class Classifier {
     this.promptTemplate = `
 You are AgentMatcher, an intelligent assistant designed to analyze user queries and match them with the most suitable agent or department. Your task is to understand the user's request, identify key entities and intents, and determine which agent or department would be best equipped to handle the query.
 
-Analyze the user's input and categorize it into one of the following agent types:
+Analyze the user's input and history and categorize it into one of the following agent types:
 <agents>
 {{AGENT_DESCRIPTIONS}}
 </agents>
 If you are unable to select an agent put "unkwnown"
-
 
 Guidelines for classification:
 
