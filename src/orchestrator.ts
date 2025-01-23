@@ -240,8 +240,6 @@ export class MultiAgentOrchestrator {
   }
 
   addAgent(agent: Agent): void {
-    console.log("add Agent2222222");
-
     if (this.agents[agent.id]) {
       throw new Error(`An agent with ID '${agent.id}' already exists.`);
     }
